@@ -1,0 +1,854 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1"/>
+<title>Bubbles® – Order Simulator</title>
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,500;0,9..40,700;0,9..40,900;1,9..40,400&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet"/>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+<style>
+*{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
+:root{
+  --pink:#e8547a;--pink-h:#d4455f;--pink-l:#fff0f4;--pink-m:#fcc8d4;
+  --bg:#f7f5f2;--surface:#ffffff;--s2:#faf9f7;--s3:#f2f0ed;
+  --border:#e8e4df;--text:#1c1917;--muted:#78716c;--subtle:#c7c3bd;
+  --green:#15803d;--blue:#1d4ed8;--gold:#92400e;--amber:#b45309;
+  --col-native:#1a6b3c;--col-pro:#e8547a;--col-essential:#2e7d32;
+  --col-xperience:#d97706;--col-collora:#9333ea;--col-accessories:#6d28d9;
+  --sh:0 1px 3px rgba(0,0,0,.06),0 4px 12px rgba(0,0,0,.04);
+  --sh-pink:0 4px 16px rgba(232,84,122,.2);
+  --radius:14px;--radius-sm:10px;
+  --font:'DM Sans',system-ui,sans-serif;
+  --mono:'DM Mono',monospace;
+}
+
+html,body{height:100%;overflow:hidden}
+body{font-family:var(--font);background:var(--bg);color:var(--text);font-size:15px}
+
+/* ─── HEADER ─── */
+header{
+  background:var(--surface);border-bottom:1px solid var(--border);
+  padding:0 20px;height:62px;
+  display:flex;align-items:center;justify-content:space-between;
+  position:sticky;top:0;z-index:200;
+  box-shadow:0 1px 0 var(--border),0 2px 10px rgba(0,0,0,.04);
+}
+.logo{display:flex;align-items:center;gap:11px}
+.logo-mark{
+  width:38px;height:38px;
+  background:linear-gradient(135deg,#e8547a,#f472a0);
+  border-radius:11px;display:flex;align-items:center;justify-content:center;
+  font-size:18px;box-shadow:var(--sh-pink);flex-shrink:0;
+}
+.logo-text h1{font-size:18px;font-weight:900;color:var(--pink);letter-spacing:.3px;line-height:1}
+.logo-text small{font-size:10px;color:var(--muted);letter-spacing:1.8px;text-transform:uppercase;font-weight:500}
+
+.fx-bar{
+  display:flex;align-items:center;gap:6px;
+  background:var(--s2);border:1px solid var(--border);
+  border-radius:12px;padding:7px 13px;
+}
+.fx-sep{width:1px;height:22px;background:var(--border);margin:0 3px}
+.fx-item{display:flex;align-items:center;gap:7px}
+.fx-item label{font-size:10px;font-weight:700;color:var(--muted);white-space:nowrap;text-transform:uppercase;letter-spacing:.6px}
+.fx-item input{
+  width:70px;border:1px solid var(--border);border-radius:8px;
+  padding:5px 8px;font-size:13px;font-weight:600;font-family:var(--mono);
+  text-align:right;color:var(--text);background:var(--surface);transition:.15s;
+}
+.fx-item input:focus{outline:none;border-color:var(--pink);box-shadow:0 0 0 3px rgba(232,84,122,.1)}
+
+/* ─── LAYOUT ─── */
+.app{
+  display:grid;
+  grid-template-columns:1fr 360px;
+  height:calc(100vh - 62px);
+  overflow:hidden;
+}
+
+/* ─── LEFT ─── */
+.left{
+  display:flex;flex-direction:column;
+  padding:16px 18px;
+  overflow:hidden;
+  gap:12px;
+}
+
+.client-bar{
+  background:var(--surface);border:1px solid var(--border);
+  border-radius:var(--radius);padding:13px 16px;
+  display:flex;gap:10px;align-items:flex-end;flex-wrap:wrap;
+  box-shadow:var(--sh);flex-shrink:0;
+}
+.field-g{display:flex;flex-direction:column;gap:3px;flex:1;min-width:110px}
+.field-g label{font-size:9px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.9px}
+.field-g input{
+  border:1px solid var(--border);border-radius:8px;
+  padding:8px 11px;font-size:13px;color:var(--text);background:var(--s2);
+  font-family:var(--font);transition:.15s;
+}
+.field-g input:focus{outline:none;border-color:var(--pink);background:var(--surface);box-shadow:0 0 0 3px rgba(232,84,122,.1)}
+
+.search-wrap{position:relative;flex-shrink:0}
+.search-wrap input{
+  width:100%;padding:10px 14px 10px 40px;
+  border:1px solid var(--border);border-radius:var(--radius-sm);
+  font-size:14px;color:var(--text);background:var(--surface);
+  box-shadow:var(--sh);transition:.15s;font-family:var(--font);
+}
+.search-wrap input:focus{outline:none;border-color:var(--pink);box-shadow:0 0 0 3px rgba(232,84,122,.1)}
+.search-ico{position:absolute;left:13px;top:50%;transform:translateY(-50%);font-size:15px;pointer-events:none;opacity:.35}
+.search-clear{
+  position:absolute;right:12px;top:50%;transform:translateY(-50%);
+  background:none;border:none;cursor:pointer;font-size:14px;color:var(--subtle);
+  display:none;padding:2px 4px;
+}
+.search-clear.visible{display:block}
+
+/* ─── CATALOG ─── */
+.catalog-scroll{overflow-y:auto;flex:1;display:flex;flex-direction:column;gap:7px;padding-right:2px}
+.catalog-scroll::-webkit-scrollbar{width:4px}
+.catalog-scroll::-webkit-scrollbar-thumb{background:var(--border);border-radius:4px}
+
+.collection{}
+.col-header{
+  display:flex;align-items:center;gap:9px;
+  padding:10px 14px;background:var(--surface);
+  border:1px solid var(--border);border-radius:var(--radius-sm);
+  cursor:pointer;user-select:none;transition:.15s;
+  box-shadow:var(--sh);
+}
+.col-header:hover,.col-header:active{border-color:var(--pink-m);background:var(--pink-l)}
+.col-badge{
+  color:#fff;border-radius:6px;padding:3px 10px;
+  font-size:10px;font-weight:700;letter-spacing:.8px;text-transform:uppercase;
+  box-shadow:0 1px 4px rgba(0,0,0,.18);white-space:nowrap;
+}
+.col-title{flex:1;font-size:12px;font-weight:600;color:var(--muted)}
+.col-count{font-size:10px;color:var(--subtle);background:var(--bg);border-radius:20px;padding:2px 8px;border:1px solid var(--border)}
+.col-arrow{font-size:10px;color:var(--subtle);transition:.2s}
+.col-arrow.open{transform:rotate(90deg);color:var(--pink)}
+
+.products-grid{display:none;flex-direction:column;gap:3px;padding:3px 0 0}
+.products-grid.open{display:flex}
+
+.product-row{
+  background:var(--surface);border:1px solid var(--border);
+  border-radius:var(--radius-sm);
+  display:grid;grid-template-columns:1fr 78px auto auto;
+  align-items:center;gap:10px;padding:10px 13px;
+  transition:.15s;
+}
+.product-row:hover{border-color:var(--pink-m);background:var(--pink-l)}
+.product-row.in-cart{border-color:var(--pink);background:#fff3f6;box-shadow:0 0 0 1px var(--pink-m)}
+.prod-name{font-size:12px;font-weight:600;line-height:1.4;color:var(--text)}
+.prod-meta{display:flex;align-items:center;gap:5px;margin-top:2px}
+.prod-sku{font-size:10px;color:var(--subtle);font-weight:500;font-family:var(--mono)}
+.imp-tag{font-size:9px;font-weight:700;color:var(--pink);background:var(--pink-l);border:1px solid var(--pink-m);border-radius:4px;padding:1px 5px}
+.prod-price{font-size:13px;font-weight:800;color:var(--green);text-align:right;white-space:nowrap;font-family:var(--mono)}
+
+.qty-ctrl{display:flex;align-items:center;gap:4px}
+.qty-btn{
+  width:26px;height:26px;border:1px solid var(--border);
+  border-radius:50%;background:var(--surface);color:var(--pink);
+  font-size:16px;cursor:pointer;display:flex;align-items:center;justify-content:center;
+  font-weight:700;line-height:1;transition:.15s;flex-shrink:0;
+  /* Better touch target */
+  touch-action:manipulation;
+}
+.qty-btn:hover,.qty-btn:active{background:var(--pink);color:#fff;border-color:var(--pink)}
+.qty-input{
+  width:38px;text-align:center;border:1px solid var(--border);
+  border-radius:7px;padding:4px 2px;font-size:12px;font-weight:700;
+  background:var(--s2);color:var(--text);font-family:var(--mono);
+}
+.add-btn{
+  background:var(--pink);color:#fff;border:none;
+  border-radius:8px;padding:7px 12px;font-size:11px;font-weight:700;
+  cursor:pointer;white-space:nowrap;transition:.15s;touch-action:manipulation;
+  box-shadow:0 2px 6px rgba(232,84,122,.2);
+}
+.add-btn:hover,.add-btn:active{background:var(--pink-h)}
+.add-btn.added{background:var(--green);box-shadow:0 2px 6px rgba(21,128,61,.2)}
+
+/* ─── RIGHT PANEL ─── */
+.right{
+  background:var(--surface);border-left:1px solid var(--border);
+  display:flex;flex-direction:column;height:100%;overflow:hidden;
+}
+.order-head{
+  padding:16px 18px 12px;border-bottom:1px solid var(--border);
+  background:linear-gradient(135deg,#fff5f8,var(--surface));flex-shrink:0;
+}
+.order-head h3{font-size:15px;font-weight:800;color:var(--pink);margin-bottom:1px}
+.order-head p{font-size:11px;color:var(--muted)}
+
+.order-items{flex:1;overflow-y:auto;padding:12px;display:flex;flex-direction:column;gap:6px}
+.order-items::-webkit-scrollbar{width:4px}
+.order-items::-webkit-scrollbar-thumb{background:var(--border);border-radius:4px}
+
+.empty-state{
+  flex:1;display:flex;flex-direction:column;
+  align-items:center;justify-content:center;
+  text-align:center;padding:40px 20px;color:var(--subtle);
+}
+.empty-ico{font-size:44px;margin-bottom:10px;opacity:.3}
+.empty-state p{font-size:12px;line-height:1.7;color:var(--muted)}
+
+.order-item{
+  display:flex;align-items:center;gap:8px;
+  padding:10px 12px;border-radius:var(--radius-sm);
+  border:1px solid var(--border);
+  background:var(--s2);transition:.15s;flex-shrink:0;
+}
+.order-item:hover{border-color:var(--pink-m);background:var(--pink-l)}
+.oi-info{flex:1;min-width:0}
+.oi-name{font-size:11px;font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;color:var(--text)}
+.oi-meta{display:flex;align-items:center;gap:4px;margin-top:3px;flex-wrap:wrap}
+.oi-col{font-size:9px;font-weight:700;padding:1px 6px;border-radius:4px;color:#fff;white-space:nowrap}
+.oi-detail{font-size:10px;color:var(--muted);font-family:var(--mono)}
+.oi-imp{font-size:9px;font-weight:700;color:var(--pink)}
+.oi-prices{text-align:right;white-space:nowrap;flex-shrink:0}
+.oi-usd{font-size:12px;font-weight:800;color:var(--green);font-family:var(--mono)}
+.oi-eur{font-size:10px;color:var(--blue);font-weight:600;font-family:var(--mono)}
+.oi-brl{font-size:10px;color:var(--muted);font-family:var(--mono)}
+.rm-btn{
+  background:none;border:none;color:var(--subtle);cursor:pointer;
+  font-size:14px;padding:3px 5px;border-radius:5px;transition:.15s;flex-shrink:0;
+  touch-action:manipulation;
+}
+.rm-btn:hover,.rm-btn:active{color:var(--pink);background:var(--pink-l)}
+
+/* ─── FOOTER ─── */
+.order-foot{border-top:1px solid var(--border);padding:14px 18px;background:var(--surface);flex-shrink:0}
+.totals-card{
+  background:var(--bg);border:1px solid var(--border);
+  border-radius:var(--radius-sm);padding:11px 14px;margin-bottom:11px;
+}
+.tot-row{display:flex;justify-content:space-between;align-items:center;padding:3px 0}
+.tot-label{font-size:11px;color:var(--muted);font-weight:500}
+.tot-val{font-size:12px;font-weight:700;font-family:var(--mono)}
+.tot-val.usd{color:var(--green)}
+.tot-val.brl{color:var(--amber)}
+hr.divider{border:none;border-top:1px solid var(--border);margin:7px 0}
+.tot-row.main .tot-label{font-size:13px;font-weight:800;color:var(--text)}
+.tot-val.eur.main{font-size:17px;font-weight:900;color:var(--blue)}
+
+.pdf-btn{
+  width:100%;
+  background:linear-gradient(135deg,var(--pink),#d4455f);
+  color:#fff;border:none;border-radius:11px;padding:13px;
+  font-size:13px;font-weight:800;cursor:pointer;font-family:var(--font);
+  display:flex;align-items:center;justify-content:center;gap:7px;
+  letter-spacing:.3px;box-shadow:var(--sh-pink);
+  transition:.15s;touch-action:manipulation;
+}
+.pdf-btn:hover,.pdf-btn:active{transform:translateY(-1px);box-shadow:0 6px 18px rgba(232,84,122,.4)}
+.clear-btn{
+  width:100%;margin-top:7px;background:none;
+  color:var(--muted);border:1px solid var(--border);
+  border-radius:9px;padding:8px;font-size:11px;
+  cursor:pointer;transition:.15s;font-family:var(--font);
+  touch-action:manipulation;
+}
+.clear-btn:hover,.clear-btn:active{color:var(--pink);border-color:var(--pink-m)}
+
+/* ─── TABLET / iPAD ─── */
+@media(max-width:900px){
+  html,body{height:100%;overflow:hidden}
+  body{overflow:hidden}
+
+  .app{
+    grid-template-columns:1fr;
+    grid-template-rows:1fr auto;
+    height:calc(100vh - 62px);
+    overflow:hidden;
+  }
+
+  /* On tablet: LEFT scrolls, RIGHT is a bottom drawer */
+  .left{height:100%;overflow:hidden;padding:12px 14px;gap:10px}
+  .catalog-scroll{flex:1;overflow-y:auto}
+
+  .right{
+    position:fixed;bottom:0;left:0;right:0;
+    height:auto;max-height:55vh;
+    border-left:none;border-top:2px solid var(--pink);
+    border-radius:20px 20px 0 0;
+    box-shadow:0 -4px 30px rgba(232,84,122,.15);
+    z-index:300;
+    transform:translateY(calc(100% - 54px));
+    transition:transform .3s cubic-bezier(.32,.72,0,1);
+  }
+  .right.panel-open{transform:translateY(0)}
+
+  .panel-drag{
+    height:54px;display:flex;align-items:center;justify-content:center;
+    cursor:pointer;touch-action:none;flex-shrink:0;position:relative;
+  }
+  .drag-handle{
+    width:40px;height:4px;background:var(--pink-m);
+    border-radius:2px;position:absolute;top:10px;
+  }
+  .panel-drag-content{
+    display:flex;align-items:center;gap:10px;
+    padding:0 18px;width:100%;margin-top:10px;
+  }
+  .panel-drag h3{font-size:13px;font-weight:800;color:var(--pink);flex:1}
+  .panel-badge{
+    background:var(--pink);color:#fff;border-radius:20px;
+    padding:3px 10px;font-size:11px;font-weight:700;
+  }
+  .panel-toggle-icon{font-size:12px;color:var(--muted)}
+
+  .order-head{display:none}
+  .order-items{max-height:calc(55vh - 260px);min-height:0}
+  .order-foot{padding:11px 14px 20px}
+
+  /* Wider fx bar on tablet */
+  .fx-bar{gap:5px;padding:6px 10px}
+  .fx-item input{width:65px;font-size:12px}
+  .fx-item label{font-size:9px}
+
+  header{padding:0 16px}
+  .logo-text h1{font-size:16px}
+
+  /* Product rows slightly bigger touch targets */
+  .product-row{padding:11px 12px}
+  .qty-btn{width:28px;height:28px}
+  .add-btn{padding:8px 13px;font-size:11px}
+}
+
+@media(max-width:600px){
+  .fx-bar{display:none}
+  .fx-mobile{
+    display:flex;gap:8px;padding:10px 14px;
+    background:var(--surface);border-bottom:1px solid var(--border);
+  }
+  .fx-mobile .fx-item{flex:1}
+  .fx-mobile .fx-item label{font-size:9px}
+  .fx-mobile .fx-item input{width:100%;font-size:13px}
+  .product-row{grid-template-columns:1fr 70px auto}
+  .add-btn{display:none}
+  .product-row.in-cart .qty-btn:last-child{background:var(--green);color:#fff;border-color:var(--green)}
+}
+@media(min-width:601px){.fx-mobile{display:none}}
+
+/* ─── NO RESULTS ─── */
+.no-results{
+  text-align:center;padding:30px 20px;color:var(--subtle);
+  font-size:13px;
+}
+</style>
+</head>
+<body>
+
+<header>
+  <div class="logo">
+    <div class="logo-mark">🐾</div>
+    <div class="logo-text">
+      <h1>Bubbles®</h1>
+      <small>Order Simulator</small>
+    </div>
+  </div>
+  <div class="fx-bar">
+    <div class="fx-item">
+      <label>USD → BRL</label>
+      <input type="number" id="fxBRL" value="5.75" step="0.01" inputmode="decimal"/>
+    </div>
+    <div class="fx-sep"></div>
+    <div class="fx-item">
+      <label>USD → EUR</label>
+      <input type="number" id="fxEUR" value="0.92" step="0.001" inputmode="decimal"/>
+    </div>
+  </div>
+</header>
+
+<!-- Mobile FX bar -->
+<div class="fx-mobile">
+  <div class="fx-item">
+    <label>USD → BRL</label>
+    <input type="number" id="fxBRL2" value="5.75" step="0.01" inputmode="decimal"/>
+  </div>
+  <div class="fx-item">
+    <label>USD → EUR</label>
+    <input type="number" id="fxEUR2" value="0.92" step="0.001" inputmode="decimal"/>
+  </div>
+</div>
+
+<div class="app">
+  <!-- LEFT: Catalog -->
+  <div class="left">
+    <div class="client-bar">
+      <div class="field-g">
+        <label>Cliente / Empresa</label>
+        <input type="text" id="clientName" placeholder="Nome do cliente..."/>
+      </div>
+      <div class="field-g" style="max-width:150px">
+        <label>País</label>
+        <input type="text" id="clientCountry" placeholder="ex: Germany"/>
+      </div>
+      <div class="field-g" style="max-width:175px">
+        <label>Evento</label>
+        <input type="text" id="eventName" placeholder="ex: Interzoo 2026"/>
+      </div>
+    </div>
+
+    <div class="search-wrap">
+      <span class="search-ico">🔍</span>
+      <input type="text" id="searchInput" placeholder="Buscar por produto ou SKU..." oninput="onSearch(this)"/>
+      <button class="search-clear" id="searchClear" onclick="clearSearch()">✕</button>
+    </div>
+
+    <div class="catalog-scroll" id="catalogContainer"></div>
+  </div>
+
+  <!-- RIGHT: Order -->
+  <div class="right" id="rightPanel">
+    <!-- Tablet drag handle -->
+    <div class="panel-drag" id="panelDrag" onclick="togglePanel()">
+      <div class="drag-handle"></div>
+      <div class="panel-drag-content">
+        <h3>📋 Pedido</h3>
+        <span class="panel-badge" id="panelBadge">0 itens</span>
+        <span class="panel-toggle-icon" id="panelToggleIcon">▲</span>
+      </div>
+    </div>
+
+    <!-- Desktop header -->
+    <div class="order-head">
+      <h3>📋 Order Summary</h3>
+      <p id="itemCountLabel">Nenhum item adicionado</p>
+    </div>
+
+    <div class="order-items" id="orderItems">
+      <div class="empty-state">
+        <div class="empty-ico">🛒</div>
+        <p>Adicione produtos do catálogo<br>para montar seu pedido</p>
+      </div>
+    </div>
+
+    <div class="order-foot">
+      <div class="totals-card">
+        <div class="tot-row">
+          <span class="tot-label">Subtotal (USD)</span>
+          <span class="tot-val usd" id="totUSD">$ 0.00</span>
+        </div>
+        <div class="tot-row">
+          <span class="tot-label">Equivalente (BRL)</span>
+          <span class="tot-val brl" id="totBRL">R$ 0,00</span>
+        </div>
+        <hr class="divider"/>
+        <div class="tot-row main">
+          <span class="tot-label">TOTAL (EUR)</span>
+          <span class="tot-val eur main" id="totEUR">€ 0,00</span>
+        </div>
+      </div>
+      <button class="pdf-btn" onclick="exportPDF()">⬇ Exportar Cotação PDF</button>
+      <button class="clear-btn" onclick="clearOrder()">🗑 Limpar Pedido</button>
+    </div>
+  </div>
+</div>
+
+<script>
+// ─── PRODUCT DATABASE ───────────────────────────────────────────────────────
+const PRODUCTS = [
+  // NATIVE
+  {sku:"NT001",col:"NATIVE",name:"Detox Shampoo 1:2 – 300ml",price:4.44,importerPrice:13.33},
+  {sku:"NT002",col:"NATIVE",name:"Delicate Shampoo – 300ml",price:4.44,importerPrice:13.33},
+  {sku:"NT003",col:"NATIVE",name:"Condicionador – 300ml",price:4.93,importerPrice:14.78},
+  {sku:"NT004",col:"NATIVE",name:"Caring Mask – 300ml",price:4.93,importerPrice:14.78},
+  {sku:"NT005",col:"NATIVE",name:"Light Leave-in – 100ml",price:2.91,importerPrice:8.72},
+  {sku:"NT006",col:"NATIVE",name:"Breeze Parfum – 100ml",price:3.62,importerPrice:10.86},
+  {sku:"NT007",col:"NATIVE",name:"Calming Parfum – 100ml",price:3.62,importerPrice:10.86},
+  // ACCESSORIES
+  {sku:"AC001",col:"ACCESSORIES",name:"Avental Groomer Standard Bubbles (Unissex)",price:3.59},
+  {sku:"AC002",col:"ACCESSORIES",name:"Frasco Diluidor Groomer Bubbles 500ml",price:1.00},
+  {sku:"AC003",col:"ACCESSORIES",name:"Jaleco Groomer Profissional Bubbles PP",price:16.98},
+  {sku:"AC004",col:"ACCESSORIES",name:"Jaleco Groomer Profissional Bubbles P",price:16.98},
+  {sku:"AC005",col:"ACCESSORIES",name:"Jaleco Groomer Profissional Bubbles M",price:16.98},
+  {sku:"AC006",col:"ACCESSORIES",name:"Jaleco Groomer Profissional Bubbles G",price:16.98},
+  {sku:"AC007",col:"ACCESSORIES",name:"Jaleco Groomer Profissional Bubbles GG",price:16.98},
+  {sku:"AC008",col:"ACCESSORIES",name:"Jaleco Groomer Profissional Bubbles EXG",price:16.98},
+  {sku:"AC010",col:"ACCESSORIES",name:"Avental Groomer Pro Bubbles (Unissex)",price:6.22},
+  {sku:"AC014",col:"ACCESSORIES",name:"Frasco Diluidor Groomer Bubbles 250ml",price:0.80},
+  // COLLORA
+  {sku:"CL009",col:"COLLORA",name:"Kit Pet Aplicador Collora (3 itens)",price:2.42},
+  {sku:"CL010",col:"COLLORA",name:"Máscara Pet Pigmentadora Collora 100g – Azul",price:11.12},
+  {sku:"CL011",col:"COLLORA",name:"Máscara Pet Pigmentadora Collora 100g – Verde",price:11.12},
+  {sku:"CL012",col:"COLLORA",name:"Máscara Pet Pigmentadora Collora 100g – Laranja",price:11.12},
+  {sku:"CL013",col:"COLLORA",name:"Máscara Pet Pigmentadora Collora 100g – Rosa",price:11.12},
+  {sku:"CL014",col:"COLLORA",name:"Máscara Pet Pigmentadora Collora 100g – Roxa",price:11.12},
+  {sku:"CL015",col:"COLLORA",name:"Máscara Pet Pigmentadora Collora 100g – Vermelha",price:11.12},
+  {sku:"CL016",col:"COLLORA",name:"Máscara Pet Pigmentadora Collora 100g – Amarela",price:11.12},
+  {sku:"CL018",col:"COLLORA",name:"Kit Pet Máscaras Pigmentadoras Collora (7 itens)",price:66.72},
+  {sku:"CL019",col:"COLLORA",name:"Máscara Pet Diluidora Collora 500g",price:5.69},
+  {sku:"CL020",col:"COLLORA",name:"Glitter Pet em Pó Collora 15g – Dourado",price:7.01},
+  {sku:"CL021",col:"COLLORA",name:"Glitter Pet em Pó Collora 15g – Prata",price:7.01},
+  // ESSENTIAL
+  {sku:"ES010",col:"ESSENTIAL",name:"Odor Neutralizing Shampoo Essential 5L (1:5)",price:17.99},
+  {sku:"ES011",col:"ESSENTIAL",name:"Neutral Shampoo Essential 5L (1:5)",price:16.99},
+  {sku:"ES012",col:"ESSENTIAL",name:"Whitening Shampoo Essential 5L (1:5)",price:16.99},
+  {sku:"ES013",col:"ESSENTIAL",name:"Hydrating Conditioner Essential 5L (1:5)",price:19.99},
+  {sku:"ES014",col:"ESSENTIAL",name:"Multifunction Mask Essential 500g",price:7.55},
+  {sku:"ES015",col:"ESSENTIAL",name:"Fast Dry Leave-In Essential 500ml",price:6.60},
+  {sku:"ES016",col:"ESSENTIAL",name:"Tropicale Perfume Essential 500ml",price:14.08},
+  {sku:"ES017",col:"ESSENTIAL",name:"Florato Perfume Essential 500ml",price:14.08},
+  {sku:"ES018",col:"ESSENTIAL",name:"Duo Frutado Perfume Essential 500ml",price:14.08},
+  {sku:"ES020",col:"ESSENTIAL",name:"Pineapple Perfume Essential 500ml",price:14.08},
+  // PRO
+  {sku:"PR072",col:"PRO",name:"Neutral Pet Shampoo Pro 5L",price:39.72},
+  {sku:"PR073",col:"PRO",name:"Neutral Pet Shampoo Pro 1L",price:11.55},
+  {sku:"PR074",col:"PRO",name:"Neutralizing Pet Shampoo Pro 5L",price:45.59},
+  {sku:"PR075",col:"PRO",name:"Neutralizing Pet Shampoo Pro 1L",price:13.01},
+  {sku:"PR076",col:"PRO",name:"Whitening Pet Shampoo Pro 5L",price:39.72},
+  {sku:"PR077",col:"PRO",name:"Whitening Pet Shampoo Pro 1L",price:11.55},
+  {sku:"PR078",col:"PRO",name:"Color-Enhancing Pet Shampoo Pro 5L",price:39.72},
+  {sku:"PR079",col:"PRO",name:"Color-Enhancing Pet Shampoo Pro 1L",price:11.55},
+  {sku:"PR080",col:"PRO",name:"Oil Reduction Pet Shampoo Pro 1L",price:12.75},
+  {sku:"PR081",col:"PRO",name:"Dermo-Facial Pet Shampoo Pro 1L",price:12.99},
+  {sku:"PR082",col:"PRO",name:"Hydrating Pet Conditioner Pro 5L",price:40.38},
+  {sku:"PR083",col:"PRO",name:"Hydrating Pet Conditioner Pro 1L",price:12.00},
+  {sku:"PR084",col:"PRO",name:"Neutralizing Pet Conditioner Pro 5L",price:40.38},
+  {sku:"PR085",col:"PRO",name:"Neutralizing Pet Conditioner Pro 1L",price:12.00},
+  {sku:"PR086",col:"PRO",name:"Hydrating Pet Mask Pro 500ml",price:10.50},
+  {sku:"PR087",col:"PRO",name:"Nourishing Pet Mask Pro 500ml",price:10.50},
+  {sku:"PR088",col:"PRO",name:"Reconstructing Pet Mask Pro 500ml",price:10.50},
+  {sku:"PR089",col:"PRO",name:"Fur Care Pet Routine Pro (3 items)",price:30.00},
+  {sku:"PR090",col:"PRO",name:"Leave-In Pet Spray Pro 500ml",price:6.60},
+  {sku:"PR091",col:"PRO",name:"Leave-In Pet Cream Pro 500ml",price:7.94},
+  {sku:"PR092",col:"PRO",name:"Otic Pet Cleansing Pro 500ml",price:6.94},
+  {sku:"PR093",col:"PRO",name:"Argan Pet Oil Pro 100ml",price:8.99},
+  {sku:"PR094",col:"PRO",name:"Silicone Pet Glove Pro 500ml",price:4.66},
+  {sku:"PR095",col:"PRO",name:"Perfume Pet Puppy Pro 500ml",price:16.07},
+  {sku:"PR096",col:"PRO",name:"Perfume Pet Ultra Pro 500ml",price:16.07},
+  {sku:"PR097",col:"PRO",name:"Perfume Pet Belgian Chocolate Pro 500ml",price:16.07},
+  {sku:"PR098",col:"PRO",name:"Perfume Pet Jabuticaba Pro 500ml",price:16.07},
+  {sku:"PR099",col:"PRO",name:"Perfume Pet Macadâmia Pro 500ml",price:16.07},
+  {sku:"PR100",col:"PRO",name:"Perfume Pet Brave Pro 500ml",price:16.07},
+  {sku:"PR101",col:"PRO",name:"Perfume Pet Candy Pro 500ml",price:16.07},
+  {sku:"PR102",col:"PRO",name:"Perfume Pet Child Pro 500ml",price:16.99},
+  {sku:"PR103",col:"PRO",name:"Texturizing Pet Shampoo Pro 1L (1:4)",price:14.99},
+  {sku:"PR104",col:"PRO",name:"Texturizing Pet Liquid Mask Pro 500ml",price:13.18},
+  {sku:"PR105",col:"PRO",name:"Texturizing Pet Leave-In Liquid 300ml",price:6.30},
+  {sku:"PR106",col:"PRO",name:"Perfume Pet Impera Pro 500ml",price:16.07},
+  {sku:"PR107",col:"PRO",name:"Texturizing Pet Kit Pro (4 items)",price:47.99},
+  {sku:"PR108",col:"PRO",name:"Intense Silky Pet Shampoo Pro 1L (1:4)",price:14.99},
+  {sku:"PR109",col:"PRO",name:"Intense Silky Pet Mask Pro 500ml",price:10.99},
+  {sku:"PR110",col:"PRO",name:"Intense Silky Pet Activator Spray Pro 300ml",price:11.49},
+  {sku:"PR111",col:"PRO",name:"Intense Silky Pet Serum Pro 100ml",price:11.99},
+  {sku:"PR112",col:"PRO",name:"Intense Silky Pet Kit (4 items)",price:47.00},
+  {sku:"PR113",col:"PRO",name:"Neutralizing Pet Conditioner Pro 5L",price:40.38},
+  // XPERIENCE
+  {sku:"XP001",col:"XPERIENCE",name:"Shampoo Pet Gelato de Pistache 1L (1:4)",price:8.93},
+  {sku:"XP002",col:"XPERIENCE",name:"Máscara Pet Gelato de Pistache 450g",price:6.56},
+  {sku:"XP003",col:"XPERIENCE",name:"Leave-In Pet Gelato de Pistache 300ml",price:4.03},
+  {sku:"XP004",col:"XPERIENCE",name:"Perfume Pet Gelato de Pistache 300ml",price:10.23},
+  {sku:"XP005",col:"XPERIENCE",name:"Kit Pet Gelato de Pistache (4 itens)",price:28.33},
+  {sku:"XP006",col:"XPERIENCE",name:"Perfume Pet Morango do Amor 300ml",price:12.18},
+  {sku:"XP009",col:"XPERIENCE",name:"Perfume Pet Mistica Arabian 200ml",price:10.38},
+  {sku:"XP010",col:"XPERIENCE",name:"Perfume Pet Zahara Arabian 200ml",price:10.38},
+  {sku:"XP011",col:"XPERIENCE",name:"Perfume Pet Oasis Arabian 200ml",price:10.38},
+  {sku:"XP012",col:"XPERIENCE",name:"Kit Pet Arabian (3 itens)",price:28.33},
+  {sku:"XP013",col:"XPERIENCE",name:"Shampoo Pet Fondue de Chocolate 1L (1:4)",price:9.47},
+  {sku:"XP014",col:"XPERIENCE",name:"Perfume Pet Fondue de Chocolate 300ml",price:11.05},
+  {sku:"XP015",col:"XPERIENCE",name:"Leave-In Pet Fondue de Chocolate 300ml",price:5.29},
+  {sku:"XP016",col:"XPERIENCE",name:"Máscara Pet Fondue de Chocolate 450g",price:8.50},
+  {sku:"XP017",col:"XPERIENCE",name:"Kit Pet Fondue de Chocolate (4 produtos)",price:31.16},
+];
+
+const COL_ORDER = ["NATIVE","PRO","ESSENTIAL","XPERIENCE","COLLORA","ACCESSORIES"];
+const COL_COLORS = {
+  NATIVE:"#1a6b3c",ACCESSORIES:"#6d28d9",COLLORA:"#9333ea",
+  ESSENTIAL:"#2e7d32",PRO:"#e8547a",XPERIENCE:"#d97706"
+};
+const COL_ICONS = {
+  NATIVE:"🌿",ACCESSORIES:"🧥",COLLORA:"🎨",
+  ESSENTIAL:"🌱",PRO:"⭐",XPERIENCE:"✨"
+};
+
+// ─── STATE ────────────────────────────────────────────────────────────────
+let cart = {};
+let openCols = {NATIVE:true,PRO:true,ESSENTIAL:true,XPERIENCE:false,COLLORA:false,ACCESSORIES:false};
+let panelOpen = false;
+
+// ─── FX ───────────────────────────────────────────────────────────────────
+function fx(){
+  // Sync mobile inputs
+  const isNarrow = window.innerWidth <= 600;
+  const brl = parseFloat(document.getElementById(isNarrow?'fxBRL2':'fxBRL').value)||5.75;
+  const eur = parseFloat(document.getElementById(isNarrow?'fxEUR2':'fxEUR').value)||0.92;
+  return{brl,eur};
+}
+function syncFx(src,destId){
+  document.getElementById(destId).value=src.value;
+  renderOrder();
+}
+['fxBRL','fxEUR'].forEach(id=>{
+  document.getElementById(id).addEventListener('input',e=>{
+    syncFx(e.target, id==='fxBRL'?'fxBRL2':'fxEUR2');
+  });
+});
+['fxBRL2','fxEUR2'].forEach(id=>{
+  document.getElementById(id).addEventListener('input',e=>{
+    syncFx(e.target, id==='fxBRL2'?'fxBRL':'fxEUR');
+  });
+});
+
+// ─── SEARCH ───────────────────────────────────────────────────────────────
+function onSearch(inp){
+  document.getElementById('searchClear').classList.toggle('visible', inp.value.length>0);
+  buildCatalog(inp.value.toLowerCase());
+}
+function clearSearch(){
+  const inp=document.getElementById('searchInput');
+  inp.value='';
+  document.getElementById('searchClear').classList.remove('visible');
+  buildCatalog('');
+}
+
+// ─── CATALOG ──────────────────────────────────────────────────────────────
+function effPrice(p){return(p.col==='NATIVE'&&p.importerPrice)?p.importerPrice:p.price}
+
+function buildCatalog(filter=''){
+  const c=document.getElementById('catalogContainer');
+  c.innerHTML='';
+  let totalShown=0;
+
+  COL_ORDER.forEach(col=>{
+    const prods=PRODUCTS.filter(p=>
+      p.col===col&&(!filter||
+        p.name.toLowerCase().includes(filter)||
+        p.sku.toLowerCase().includes(filter)
+      )
+    );
+    if(!prods.length)return;
+    totalShown+=prods.length;
+    const isOpen=filter||openCols[col];
+    const d=document.createElement('div');
+    d.className='collection';
+    d.innerHTML=`
+      <div class="col-header" onclick="toggleCol('${col}',this)">
+        <span class="col-badge" style="background:${COL_COLORS[col]}">${COL_ICONS[col]} ${col}</span>
+        <span class="col-title">${prods.length} produto${prods.length>1?'s':''}</span>
+        <span class="col-count">${prods.length}</span>
+        <span class="col-arrow ${isOpen?'open':''}">▶</span>
+      </div>
+      <div class="products-grid ${isOpen?'open':''}" id="grid-${col}">
+        ${prods.map(rowHTML).join('')}
+      </div>`;
+    c.appendChild(d);
+  });
+
+  if(totalShown===0&&filter){
+    c.innerHTML=`<div class="no-results">🔍 Nenhum produto encontrado para "<strong>${filter}</strong>"</div>`;
+  }
+}
+
+function rowHTML(p){
+  const inCart=cart[p.sku];
+  const qty=inCart?inCart.qty:1;
+  const ep=effPrice(p);
+  const isImp=p.col==='NATIVE'&&p.importerPrice;
+  return`<div class="product-row ${inCart?'in-cart':''}" id="row-${p.sku}">
+    <div>
+      <div class="prod-name">${p.name}</div>
+      <div class="prod-meta">
+        <span class="prod-sku">${p.sku}</span>
+        ${isImp?'<span class="imp-tag">IMPORTER</span>':''}
+      </div>
+    </div>
+    <div class="prod-price">$ ${ep.toFixed(2)}</div>
+    <div class="qty-ctrl">
+      <button class="qty-btn" onclick="changeQty('${p.sku}',-1)">−</button>
+      <input class="qty-input" type="number" min="1" value="${qty}" id="qty-${p.sku}" onchange="setQty('${p.sku}',this.value)" inputmode="numeric"/>
+      <button class="qty-btn" onclick="changeQty('${p.sku}',1)">+</button>
+    </div>
+    <button class="add-btn ${inCart?'added':''}" onclick="addToCart('${p.sku}')">${inCart?'✓ Added':'+ Add'}</button>
+  </div>`;
+}
+
+function toggleCol(col,el){
+  openCols[col]=!openCols[col];
+  document.getElementById('grid-'+col).classList.toggle('open',openCols[col]);
+  el.querySelector('.col-arrow').classList.toggle('open',openCols[col]);
+}
+
+const changeQty=(sku,d)=>{
+  const i=document.getElementById('qty-'+sku);
+  if(i)i.value=Math.max(1,(parseInt(i.value)||1)+d);
+};
+const setQty=(sku,v)=>{
+  const i=document.getElementById('qty-'+sku);
+  if(i)i.value=Math.max(1,parseInt(v)||1);
+};
+
+// ─── CART ─────────────────────────────────────────────────────────────────
+function addToCart(sku){
+  const p=PRODUCTS.find(x=>x.sku===sku);
+  const qEl=document.getElementById('qty-'+sku);
+  const qty=qEl?parseInt(qEl.value)||1:1;
+  cart[sku]={product:p,qty,unitPrice:effPrice(p)};
+  renderOrder();
+  buildCatalog(document.getElementById('searchInput').value.toLowerCase());
+  // Auto-open panel on tablet
+  if(window.innerWidth<=900&&!panelOpen)openPanel();
+}
+
+function removeFromCart(sku){
+  delete cart[sku];
+  renderOrder();
+  buildCatalog(document.getElementById('searchInput').value.toLowerCase());
+}
+
+function clearOrder(){
+  cart={};
+  renderOrder();
+  buildCatalog(document.getElementById('searchInput').value.toLowerCase());
+  if(panelOpen&&window.innerWidth<=900)closePanel();
+}
+
+// ─── ORDER RENDER ─────────────────────────────────────────────────────────
+function renderOrder(){
+  const items=Object.values(cart);
+  const el=document.getElementById('orderItems');
+  const{brl,eur}=fx();
+  const units=items.reduce((a,i)=>a+i.qty,0);
+
+  // Update tablet badge
+  document.getElementById('panelBadge').textContent=
+    items.length?`${items.length} SKU · ${units} un`:'0 itens';
+
+  if(!items.length){
+    el.innerHTML='<div class="empty-state"><div class="empty-ico">🛒</div><p>Adicione produtos do catálogo<br>para montar seu pedido</p></div>';
+    document.getElementById('itemCountLabel').textContent='Nenhum item adicionado';
+    document.getElementById('totUSD').textContent='$ 0.00';
+    document.getElementById('totBRL').textContent='R$ 0,00';
+    document.getElementById('totEUR').textContent='€ 0,00';
+    return;
+  }
+
+  document.getElementById('itemCountLabel').textContent=
+    `${items.length} SKU${items.length>1?'s':''} · ${units} unidade${units>1?'s':''}`;
+
+  el.innerHTML=items.map(({product:p,qty,unitPrice})=>{
+    const tot=(unitPrice||p.price)*qty;
+    const isImp=p.col==='NATIVE'&&p.importerPrice;
+    return`<div class="order-item">
+      <div class="oi-info">
+        <div class="oi-name">${p.name}</div>
+        <div class="oi-meta">
+          <span class="oi-col" style="background:${COL_COLORS[p.col]}">${p.col}</span>
+          <span class="oi-detail">${p.sku} · qty ${qty}</span>
+          ${isImp?'<span class="oi-imp">IMPORTER</span>':''}
+        </div>
+      </div>
+      <div class="oi-prices">
+        <div class="oi-usd">$ ${tot.toFixed(2)}</div>
+        <div class="oi-eur">€ ${(tot*eur).toFixed(2)}</div>
+        <div class="oi-brl">R$ ${(tot*brl).toFixed(2).replace('.',',')}</div>
+      </div>
+      <button class="rm-btn" onclick="removeFromCart('${p.sku}')" title="Remover">✕</button>
+    </div>`;
+  }).join('');
+
+  const totUSD=items.reduce((a,{product:p,qty,unitPrice})=>a+(unitPrice||p.price)*qty,0);
+  document.getElementById('totUSD').textContent=`$ ${totUSD.toFixed(2)}`;
+  document.getElementById('totBRL').textContent=`R$ ${(totUSD*brl).toFixed(2).replace('.',',')}`;
+  document.getElementById('totEUR').textContent=`€ ${(totUSD*eur).toFixed(2)}`;
+}
+
+// ─── TABLET PANEL ─────────────────────────────────────────────────────────
+function openPanel(){panelOpen=true;document.getElementById('rightPanel').classList.add('panel-open');document.getElementById('panelToggleIcon').textContent='▼';}
+function closePanel(){panelOpen=false;document.getElementById('rightPanel').classList.remove('panel-open');document.getElementById('panelToggleIcon').textContent='▲';}
+function togglePanel(){panelOpen?closePanel():openPanel();}
+
+// ─── PDF EXPORT ───────────────────────────────────────────────────────────
+function exportPDF(){
+  const{jsPDF}=window.jspdf;
+  const doc=new jsPDF({orientation:'p',unit:'mm',format:'a4'});
+  const{brl,eur}=fx();
+  const client=document.getElementById('clientName').value||'—';
+  const country=document.getElementById('clientCountry').value||'—';
+  const event=document.getElementById('eventName').value||'—';
+  const items=Object.values(cart);
+  const date=new Date().toLocaleDateString('pt-BR');
+
+  if(!items.length){alert('Adicione produtos antes de exportar.');return;}
+
+  // Header bg
+  doc.setFillColor(232,84,122);doc.rect(0,0,210,34,'F');
+  doc.setFillColor(212,69,95);doc.rect(0,30,210,4,'F');
+
+  // Logo text
+  doc.setTextColor(255,255,255);
+  doc.setFontSize(22);doc.setFont('helvetica','bold');doc.text('Bubbles®',14,13);
+  doc.setFontSize(8.5);doc.setFont('helvetica','normal');
+  doc.text('International Order Quotation',14,20);
+  doc.setFontSize(7.5);
+  doc.text(`Cliente: ${client}   |   País: ${country}   |   Evento: ${event}   |   Data: ${date}`,14,27);
+
+  // FX box
+  doc.setFillColor(250,240,243);doc.roundedRect(140,5,62,22,3,3,'F');
+  doc.setTextColor(232,84,122);doc.setFontSize(7);doc.setFont('helvetica','bold');
+  doc.text('CÂMBIO',144,10);
+  doc.setTextColor(80,40,60);doc.setFont('helvetica','normal');
+  doc.text(`1 USD = R$ ${brl.toFixed(2)}`,144,16);
+  doc.text(`1 USD = € ${eur.toFixed(3)}`,144,22);
+
+  // Table header
+  let y=42;
+  doc.setFillColor(35,35,35);doc.rect(10,y,190,8,'F');
+  doc.setTextColor(255,255,255);doc.setFontSize(7.5);doc.setFont('helvetica','bold');
+  [{t:'SKU',x:13},{t:'Produto',x:30},{t:'Coleção',x:108},{t:'Qtd',x:133},{t:'Unit $',x:145},{t:'Total $',x:161},{t:'Total €',x:179}]
+    .forEach(c=>doc.text(c.t,c.x,y+5.5));
+  y+=10;
+
+  let totUSD=0;
+  items.forEach(({product:p,qty,unitPrice},i)=>{
+    if(y>272){doc.addPage();y=15;}
+    if(i%2===0){doc.setFillColor(252,245,248);doc.rect(10,y-4,190,9,'F');}
+    const up=unitPrice||p.price,tot=up*qty;totUSD+=tot;
+    const isImp=p.col==='NATIVE'&&p.importerPrice;
+    doc.setTextColor(70,70,70);doc.setFont('helvetica','bold');doc.setFontSize(7);
+    doc.text(p.sku,13,y+1);
+    doc.setFont('helvetica','normal');
+    doc.text(doc.splitTextToSize(p.name,74)[0],30,y+1);
+    doc.setTextColor(isImp?232:100,isImp?84:100,isImp?122:100);
+    doc.text(p.col+(isImp?' ★':''),108,y+1);
+    doc.setTextColor(70,70,70);doc.text(String(qty),136,y+1);
+    doc.setTextColor(21,128,61);doc.text(`$${up.toFixed(2)}`,145,y+1);
+    doc.text(`$${tot.toFixed(2)}`,161,y+1);
+    doc.setTextColor(29,78,216);doc.text(`€${(tot*eur).toFixed(2)}`,179,y+1);
+    y+=9;
+  });
+
+  // Totals block
+  y+=4;
+  doc.setFillColor(232,84,122);doc.roundedRect(10,y,190,30,3,3,'F');
+  doc.setTextColor(255,255,255);doc.setFont('helvetica','bold');
+  doc.setFontSize(9);doc.text('TOTAL (USD)',15,y+8);doc.text(`$ ${totUSD.toFixed(2)}`,162,y+8);
+  doc.setFontSize(8);doc.text('TOTAL (BRL)',15,y+17);doc.text(`R$ ${(totUSD*brl).toFixed(2)}`,157,y+17);
+  doc.setFontSize(10);doc.text('TOTAL (EUR)',15,y+26);doc.text(`€ ${(totUSD*eur).toFixed(2)}`,160,y+26);
+
+  // Footer
+  doc.setFontSize(6);doc.setTextColor(160,160,160);doc.setFont('helvetica','normal');
+  doc.text('Bubbles® Pet Cosmetics  |  EXW Prices – Subject to Confirmation  |  ★ Importer Price',14,292);
+
+  const blob=doc.output('blob');
+  const url=URL.createObjectURL(blob);
+  // iPad-safe: try open in new tab, fallback to anchor click
+  const a=document.createElement('a');
+  a.href=url;
+  a.target='_blank';
+  a.download=`Bubbles_Cotacao_${client.replace(/\s+/g,'_')}_${date.replace(/\//g,'-')}.pdf`;
+  document.body.appendChild(a);
+  a.click();
+  setTimeout(()=>{document.body.removeChild(a);URL.revokeObjectURL(url);},2000);
+}
+
+// ─── INIT ─────────────────────────────────────────────────────────────────
+buildCatalog();
+renderOrder();
+</script>
+</body>
+</html>
